@@ -19,9 +19,9 @@ async function loginUser(username, password) {
       .input('username', sql.NVarChar, username)
       .input('password', sql.NVarChar, password)
       .execute('spLoginUser');
-    // Return RoleID (and optionally UserID if needed)
     if (result.recordset.length > 0) {
-      return { RoleID: result.recordset[0].RoleID };
+      // Return both RoleID and UserID
+      return { RoleID: result.recordset[0].RoleID, UserID: result.recordset[0].UserID };
     } else {
       return { msg: 'No user found' };
     }
@@ -30,6 +30,33 @@ async function loginUser(username, password) {
   }
 }
 
+
+async function searchPatient(therapistId, patientId) {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request()
+      .input('therapistId', sql.Int, parseInt(therapistId))
+      .input('patientId', sql.Int, parseInt(patientId))
+      .execute('spSearchPatient');
+    if (result.recordset.length > 0) {
+      return result.recordset[0];
+    } else {
+      return null;
+    }
+  } catch (err) {
+    if (err.message.includes('Forbidden')) {
+      const error = new Error('Forbidden');
+      error.status = 403;
+      throw error;
+    }
+    throw err;
+  }
+}
+
+
 module.exports = {
-  loginUser
+  loginUser,
+  searchPatient
 };
+
+
