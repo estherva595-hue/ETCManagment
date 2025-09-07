@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotional Therapy Clinique</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: url('myMainBG.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #222;
+        }
+        .intro {
+            background: rgba(255,255,255,0.8);
+            max-width: 600px;
+            margin: 100px auto 20px auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .login-box {
+            background: rgba(255,255,255,0.85);
+            max-width: 400px;
+            margin: 0 auto 40px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        .login-box input {
+            width: 80%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        .login-box button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            background: #4a90e2;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        .login-box button:hover {
+            background: #357abd;
+        }
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 220px;
+            background: rgba(74,144,226,0.95);
+            color: #fff;
+            padding: 30px 0;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .sidebar button {
+            background: none;
+            border: none;
+            color: #fff;
+            padding: 14px 24px;
+            text-align: left;
+            font-size: 1em;
+            cursor: pointer;
+            width: 100%;
+        }
+        .sidebar button:hover {
+            background: #357abd;
+        }
+        .main-content {
+            flex: 1;
+            background: rgba(255,255,255,0.85);
+            padding: 40px;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="intro" id="intro">
+        <h1>Welcome to Emotional Therapy Clinique</h1>
+        <p>
+            At Emotional Therapy Clinique, we are dedicated to supporting your emotional well-being. 
+            Our experienced therapists provide a safe and compassionate environment to help you navigate life's challenges, 
+            foster personal growth, and achieve lasting emotional balance.
+        </p>
+    </div>
+    <div class="login-box" id="login-box">
+        <input type="text" id="username" placeholder="Username" />
+        <br>
+        <input type="password" id="password" placeholder="Password" />
+        <br>
+        <button onclick="submitLogin()">Login</button>
+    </div>
+    <div id="app" style="display:none;">
+        <div class="app-container">
+            <div class="sidebar" id="sidebar"></div>
+            <div class="main-content" id="main-content">
+                <h2>Welcome!</h2>
+                <p>Select an option from the sidebar.</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        function submitLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            fetch('/loginUser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.RoleID !== undefined) {
+                    console.log('RoleID:', data.RoleID);
+                    showApp(data.RoleID);
+                } else {
+                    alert(data.msg || 'Login failed');
+                }
+            })
+            .catch(error => {
+                alert('Error logging in');
+            });
+        }
+
+        function showApp(roleId) {
+            document.getElementById('intro').style.display = 'none';
+            document.getElementById('login-box').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+
+            const sidebar = document.getElementById('sidebar');
+            sidebar.innerHTML = ''; // Clear previous
+
+            let options = [];
+            if (roleId == 1) {
+                options = [
+                    'Terapist Module',
+                    'Browse',
+                    'Adm. Secretary Module',
+                    'Patients',
+                    'Payment',
+                    'Personalized Picks'
+                ];
+            } else if (roleId == 2) {
+                options = [
+                    'Browse',
+                    'Adm. Secretary Module',
+                    'Patients',
+                    'Payment'
+                ];
+            } else if (roleId == 3) {
+                options = [
+                    'Terapist Module'
+                ];
+            }
+
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.textContent = opt;
+                btn.onclick = () => showContent(opt);
+                sidebar.appendChild(btn);
+            });
+        }
+
+        function showContent(option) {
+            const main = document.getElementById('main-content');
+            main.innerHTML = `<h2>${option}</h2><p>Content for "${option}" will appear here.</p>`;
+        }
+    </script>
+</body>
+</html>
