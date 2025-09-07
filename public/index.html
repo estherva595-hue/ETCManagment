@@ -154,30 +154,59 @@
 
         function sendPatientSearch() {
             const patientId = document.getElementById('patientId').value;
-            const therapistId = window.currentUserId; // Use the actual logged-in therapistId
+            const therapistId = window.currentUserId;
             fetch('/searchPatient', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ therapistId, patientId })
             })
                 .then(response => {
-                    console.log('searchPatient called with:', therapistId, patientId);
                     if (response.status === 403) {
-                        document.getElementById('patientResult').innerText = 'Forbidden: You are not assigned to this patient.';
+                        document.getElementById('patientResult').innerHTML = 'Forbidden: You are not assigned to this patient.';
                         return null;
                     }
                     return response.json();
                 })
                 .then(data => {
                     if (data) {
-                        document.getElementById('patientResult').innerText = JSON.stringify(data, null, 2);
+                        const formattedDate = new Date(data.DateOfBirth).toLocaleDateString('he-IL');
+                        const patientHTML = `
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; color: #333;">Patient Information</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">First Name:</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${data.FirstName}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Last Name:</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${data.LastName}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Date of Birth:</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${formattedDate}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Fund ID:</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${data.FundID}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">ID Number:</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${data.IDNumber}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+                        document.getElementById('patientResult').innerHTML = patientHTML;
                     }
                 })
                 .catch(() => {
-                    document.getElementById('patientResult').innerText = 'Error searching patient.';
+                    document.getElementById('patientResult').innerHTML = 'Error searching patient.';
                 });
         }
 
+
+        //---------------------------------------------------------------
 
         function showApp(roleId) {
             document.getElementById('intro').style.display = 'none';
