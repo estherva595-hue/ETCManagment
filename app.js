@@ -42,3 +42,23 @@ app.post('/searchPatient', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+
+// In app.js or a separate routes file
+app.get('/api/healthFunds', async (req, res) => {
+  try {
+    const funds = await myRepository.getHealthFunds();
+    res.json(funds);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load health funds' });
+  }
+});
+
+app.post('/api/patients', async (req, res) => {
+  try {
+    const result = await myRepository.addPatient(req.body);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to register patient' });
+  }
+});

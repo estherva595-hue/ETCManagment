@@ -60,3 +60,36 @@ module.exports = {
 };
 
 
+async function getHealthFunds() {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request().query('SELECT FundID, FundName FROM HealthFunds');
+    return result.recordset;
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function addPatient(patient) {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request()
+      .input('FirstName', sql.NVarChar, patient.FirstName)
+      .input('LastName', sql.NVarChar, patient.LastName)
+      .input('DateOfBirth', sql.Date, patient.DateOfBirth)
+      .input('Gender', sql.NVarChar, patient.Gender)
+      .input('FundID', sql.Int, patient.FundID)
+      .input('IDNumber', sql.NVarChar, patient.IDNumber)
+      .execute('spAddPatient');
+    return { PatientID: result.recordset[0].PatientID };
+  } catch (err) {
+    throw err;
+  }
+}
+
+module.exports = {
+  loginUser,
+  searchPatient,
+  getHealthFunds,
+  addPatient
+};

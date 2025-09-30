@@ -260,7 +260,113 @@
         </div>
         <div id="patientResult"></div>
     `;
+            } else if (option === "Patients" && (window.currentRoleId == 1 || window.currentRoleId == 2)) {
+                showPatientForm();
             }
+        }
+
+        function showPatientForm() {
+            const main = document.getElementById('main-content');
+            main.innerHTML = `
+                <h2>New Patient Registration</h2>
+                <form id="newPatientForm" onsubmit="return submitPatientForm(event)" style="max-width: 600px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">First Name <span style="color: #d93025;">*</span></label>
+                        <input type="text" id="firstName" required dir="rtl" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Last Name <span style="color: #d93025;">*</span></label>
+                        <input type="text" id="lastName" required dir="rtl" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">ID Number <span style="color: #d93025;">*</span></label>
+                        <input type="text" id="idNumber" required pattern="\\d{9}" maxlength="9" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <div id="idNumberError" style="color: #d93025; font-size: 0.9em; margin-top: 5px; display: none;">ID must be exactly 9 digits</div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Date of Birth <span style="color: #d93025;">*</span></label>
+                        <input type="date" id="dateOfBirth" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Gender</label>
+                        <select id="gender" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="">Select Gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="O">Other</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Health Fund</label>
+                        <select id="fundId" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="">Select Health Fund</option>
+                        </select>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <button type="submit" style="padding: 12px 24px; border: none; border-radius: 6px; background: #4a90e2; color: white; font-size: 1em; cursor: pointer;">Register Patient</button>
+                    </div>
+                </form>
+            `;
+            loadHealthFunds();
+        }
+
+        async function loadHealthFunds() {
+            try {
+                const response = await fetch('/api/healthFunds');
+                const funds = await response.json();
+                const select = document.getElementById('fundId');
+                if (select) {
+                    funds.forEach(fund => {
+                        const option = document.createElement('option');
+                        option.value = fund.FundID;
+                        option.textContent = fund.FundName;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading health funds:', error);
+            }
+        }
+
+        async function submitPatientForm(event) {
+            event.preventDefault();
+            
+            document.getElementById('idNumberError').style.display = 'none';
+            
+            const formData = {
+                FirstName: document.getElementById('firstName').value,
+                LastName: document.getElementById('lastName').value,
+                IDNumber: document.getElementById('idNumber').value,
+                DateOfBirth: document.getElementById('dateOfBirth').value,
+                Gender: document.getElementById('gender').value,
+                FundID: document.getElementById('fundId').value || null
+            };
+            
+            if (!/^\d{9}$/.test(formData.IDNumber)) {
+                document.getElementById('idNumberError').style.display = 'block';
+                return false;
+            }
+            
+            try {
+                const response = await fetch('/api/patients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                alert('Patient registered successfully!');
+                document.getElementById('newPatientForm').reset();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error registering patient. Please try again.');
+            }
+            
+            return false;
         }
 
 

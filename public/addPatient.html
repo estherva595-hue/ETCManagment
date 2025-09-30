@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Patient - ETC</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-title {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #444;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            margin-top: 5px;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+        }
+
+        .error-message {
+            color: #d93025;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .buttons {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .submit-btn {
+            background: #4a90e2;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background: #357abd;
+        }
+
+        .cancel-btn {
+            background: #f1f1f1;
+            color: #333;
+        }
+
+        .cancel-btn:hover {
+            background: #e4e4e4;
+        }
+
+        .required {
+            color: #d93025;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <h2 class="form-title">New Patient Registration</h2>
+        <form id="newPatientForm" onsubmit="return submitForm(event)">
+            <div class="form-group">
+                <label>First Name <span class="required">*</span></label>
+                <input type="text" id="firstName" required dir="rtl">
+                <div class="error-message" id="firstNameError">First name is required</div>
+            </div>
+
+            <div class="form-group">
+                <label>Last Name <span class="required">*</span></label>
+                <input type="text" id="lastName" required dir="rtl">
+                <div class="error-message" id="lastNameError">Last name is required</div>
+            </div>
+
+            <div class="form-group">
+                <label>ID Number <span class="required">*</span></label>
+                <input type="text" id="idNumber" required pattern="\d{9}" maxlength="9">
+                <div class="error-message" id="idNumberError">ID must be exactly 9 digits</div>
+            </div>
+
+            <div class="form-group">
+                <label>Date of Birth <span class="required">*</span></label>
+                <input type="date" id="dateOfBirth" required>
+                <div class="error-message" id="dobError">Valid date of birth is required</div>
+            </div>
+
+            <div class="form-group">
+                <label>Gender</label>
+                <select id="gender">
+                    <option value="">Select Gender</option>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="O">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Health Fund</label>
+                <select id="fundId">
+                    <option value="">Select Health Fund</option>
+                    <!-- Will be populated from database -->
+                </select>
+            </div>
+
+            <div class="buttons">
+                <button type="button" class="cancel-btn" onclick="window.history.back()">Cancel</button>
+                <button type="submit" class="submit-btn">Register Patient</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Load health funds when page loads
+        document.addEventListener('DOMContentLoaded', loadHealthFunds);
+
+        async function loadHealthFunds() {
+            try {
+                const response = await fetch('/api/healthFunds');
+                const funds = await response.json();
+                const select = document.getElementById('fundId');
+
+                funds.forEach(fund => {
+                    const option = document.createElement('option');
+                    option.value = fund.FundID;
+                    option.textContent = fund.FundName;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading health funds:', error);
+            }
+        }
+
+        function validateIsraeliID(id) {
+            if (!/^\d{9}$/.test(id)) return false;
+
+            const digits = Array.from(id).map(Number);
+            let sum = 0;
+
+            for (let i = 0; i < 9; i++) {
+                let digit = digits[i];
+                if (i % 2 === 0) {
+                    digit *= 1;
+                } else {
+                    digit *= 2;
+                    if (digit > 9) digit -= 9;
+                }
+                sum += digit;
+            }
+
+            return sum % 10 === 0;
+        }
+
+        async function submitForm(event) {
+            event.preventDefault();
+
+            // Reset error messages
+            document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
+
+            // Get form values
+            const formData = {
+                FirstName: document.getElementById('firstName').value,
+                LastName: document.getElementById('lastName').value,
+                IDNumber: document.getElementById('idNumber').value,
+                DateOfBirth: document.getElementById('dateOfBirth').value,
+                Gender: document.getElementById('gender').value,
+                FundID: document.getElementById('fundId').value || null
+            };
+
+            // Basic ID validation (9 digits only)
+            if (!/^\d{9}$/.test(formData.IDNumber)) {
+                document.getElementById('idNumberError').style.display = 'block';
+                return false;
+            }
+
+            try {
+                const response = await fetch('/api/patients', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                alert('Patient registered successfully!');
+                window.location.href = '/'; // Redirect to home page or patient list
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error registering patient. Please try again.');
+            }
+
+            return false;
+        }
+    </script>
+</body>
+
+</html>

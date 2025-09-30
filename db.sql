@@ -13,7 +13,6 @@ BEGIN
 END
 GO
 
-
 CREATE OR ALTER PROCEDURE spSearchPatient
     @therapistId INT,
     @patientId INT
@@ -36,9 +35,54 @@ BEGIN
         RAISERROR('Forbidden', 16, 1);
     END
 END
+GO
 
+CREATE OR ALTER PROCEDURE spAddPatient
+    @FirstName NVARCHAR(50),
+    @LastName NVARCHAR(50),
+    @DateOfBirth DATE,
+    @Gender NVARCHAR(10),
+    @FundID INT,
+    @IDNumber NVARCHAR(20)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Check if ID Number already exists
+    IF EXISTS (SELECT 1 FROM Patients WHERE IDNumber = @IDNumber)
+    BEGIN
+        RAISERROR('Patient with this ID number already exists', 16, 1);
+        RETURN;
+    END
 
-select * from appointments where therapistId =4 and patientId = 103
+    -- Trim whitespace and validate ID Number format (9 digits)
+    SET @IDNumber = LTRIM(RTRIM(@IDNumber));
+    IF LEN(@IDNumber) <> 9 OR @IDNumber LIKE '%[^0-9]%'
+    BEGIN
+        RAISERROR('ID Number must be exactly 9 digits', 16, 1);
+        RETURN;
+    END
 
---let me = read_file(filePath: "c:\\Users\\user\\Documents\\EstherW\\GITHUB\\FinalProd32\\myRepository.js", startLine: 1, endLine: 50)
+    -- Insert new patient
+    INSERT INTO Patients (
+        FirstName, 
+        LastName, 
+        DateOfBirth, 
+        Gender, 
+        FundID, 
+        IDNumber
+    )
+    VALUES (
+        @FirstName,
+        @LastName,
+        @DateOfBirth,
+        @Gender,
+        @FundID,
+        @IDNumber
+    );
+
+    -- Return the new PatientID
+    SELECT SCOPE_IDENTITY() AS PatientID;
+END
+GO
 
