@@ -188,8 +188,8 @@
                             <td style="padding: 8px; border-bottom: 1px solid #eee;">${formattedDate}</td>
                         </tr>
                         <tr>
-                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Fund ID:</td>
-                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${data.FundID}</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Health Fund:</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${data.FundName || 'No Fund'}</td>
                         </tr>
                         <tr>
                             <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">ID Number:</td>
@@ -199,10 +199,16 @@
                 </div>
             `;
                         document.getElementById('patientResult').innerHTML = patientHTML;
+                        // Hide search button after finding patient
+                        document.getElementById('searchButton').style.display = 'none';
+                        // Show treatment module and load history
+                        document.getElementById('treatmentModule').style.display = 'block';
+                        loadTreatmentHistory(document.getElementById('patientId').value);
                     }
                 })
                 .catch(() => {
                     document.getElementById('patientResult').innerHTML = 'Error searching patient.';
+                    document.getElementById('treatmentModule').style.display = 'none';
                 });
         }
 
@@ -256,15 +262,7 @@
             const main = document.getElementById('main-content');
             main.innerHTML = `<h2>${option}</h2><p>Content for "${option}" will appear here.</p>`;
             if (option === "Terapist Module" && (window.currentRoleId == 3 || window.currentRoleId == 4)) {
-                main.innerHTML = `
-        <h2>Terapist Module</h2>
-        <div>
-            <label for="patientId">Patient ID:</label>
-            <input type="number" id="patientId" />
-            <button onclick="sendPatientSearch()">Search</button>
-        </div>
-        <div id="patientResult"></div>
-    `;
+                showTherapistModule();
             } else if (option === "Patients" && (window.currentRoleId == 1 || window.currentRoleId == 2)) {
                 showPatientForm();
             }
@@ -331,6 +329,198 @@
             } catch (error) {
                 console.error('Error loading health funds:', error);
             }
+        }
+
+        function showTherapistModule() {
+            const main = document.getElementById('main-content');
+            main.innerHTML = `
+                <h2>Patient Record</h2>
+                <div id="searchSection" style="margin-bottom: 20px;">
+                    <label for="patientId">Patient ID Number:</label>
+                    <input type="text" id="patientId" maxlength="9" style="margin-left: 10px;" />
+                    <button id="searchButton" onclick="sendPatientSearch()">Search</button>
+                </div>
+                <div id="patientResult"></div>
+                <div id="treatmentModule" style="display: none; margin-top: 30px;">
+                    <div style="display: flex; gap: 20px;">
+                        <div style="flex: 1;">
+                            <h3>היסטוריית פגישות</h3>
+                            <div id="treatmentHistory" style="border: 1px solid #ddd; padding: 15px; height: 300px; overflow-y: auto; background: #f9f9f9;"></div>
+                        </div>
+                        <div style="flex: 1;">
+                            <h3>עדכון פגישה</h3>
+                            <div style="border: 1px solid #ddd; padding: 15px; background: white;">
+                                <div style="margin-bottom: 15px;">
+                                    <label>Treatment Type:</label>
+                                    <select id="treatmentType" style="width: 100%; padding: 8px; margin-top: 5px;"></select>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>Treatment Template:</label>
+                                    <select id="treatmentTemplate" style="width: 100%; padding: 8px; margin-top: 5px;"></select>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>סיכום הפגישה:</label>
+                                    <textarea id="treatmentSummary" rows="4" style="width: 100%; padding: 8px; margin-top: 5px;"></textarea>
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label>המלצות:</label>
+                                    <textarea id="recommendations" rows="4" style="width: 100%; padding: 8px; margin-top: 5px;"></textarea>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button onclick="createNewTreatment()" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 4px;">Save Appointment</button>
+                                    <button onclick="scheduleNext()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px;">Schedule Next Appointment</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadTreatmentHistory(idNumber) {
+            try {
+                // Load treatment types and templates first
+                await loadTreatmentTypes();
+                await loadTreatmentTemplates();
+                
+                const response = await fetch('/api/treatmentHistory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ therapistId: window.currentUserId, idNumber })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load treatment history');
+                }
+                
+                const treatments = await response.json();
+                const historyDiv = document.getElementById('treatmentHistory');
+                const treatmentSelect = document.getElementById('treatmentSelect');
+                
+                if (treatments.length === 0) {
+                    historyDiv.innerHTML = '<p>אין היסטוריית פגישות</p>';
+                    treatmentSelect.innerHTML = '<option value="">אין פגישות זמינות</option>';
+                    return;
+                }
+                
+                // Display history
+                historyDiv.innerHTML = treatments.map(t => `
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #eee; border-radius: 4px; background: white;">
+                        <strong>תאריך:</strong> ${new Date(t.TreatmentDate).toLocaleDateString('he-IL')}<br>
+                        <strong>סוג טיפול:</strong> ${t.TreatmentType || t.TreatmentTypeName || 'לא צוין'}<br>
+                        <strong>סיכום:</strong> ${t.TreatmentSummary || 'אין סיכום'}<br>
+                        <strong>המלצות:</strong> ${t.Recommendations || 'אין המלצות'}
+                    </div>
+                `).join('');
+                
+                // Clear form for new treatment entry
+                document.getElementById('treatmentType').value = '';
+                document.getElementById('treatmentTemplate').value = '';
+                document.getElementById('treatmentSummary').value = '';
+                document.getElementById('recommendations').value = '';
+                
+            } catch (error) {
+                console.error('Error loading treatment history:', error);
+                document.getElementById('treatmentHistory').innerHTML = '<p>שגיאה בטעינת היסטוריית הפגישות</p>';
+            }
+        }
+
+        async function loadTreatmentTypes() {
+            try {
+                console.log('Loading treatment types...');
+                const response = await fetch('/api/treatmentTypes');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const types = await response.json();
+                console.log('Treatment types loaded:', types);
+                const select = document.getElementById('treatmentType');
+                
+                if (!select) {
+                    console.error('Treatment type select element not found');
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Select Treatment Type</option>' +
+                    types.map(type => `<option value="${type.TypeName}">${type.TypeName}</option>`).join('');
+                    
+            } catch (error) {
+                console.error('Error loading treatment types:', error);
+            }
+        }
+
+        async function loadTreatmentTemplates() {
+            try {
+                const response = await fetch('/api/treatmentTemplates');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const templates = await response.json();
+                const select = document.getElementById('treatmentTemplate');
+                
+                if (!select) {
+                    console.error('Treatment template select element not found');
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Select Template (Optional)</option>' +
+                    templates.map(template => `<option value="${template.TemplateID}">${template.TemplateName}</option>`).join('');
+                    
+            } catch (error) {
+                console.error('Error loading treatment templates:', error);
+            }
+        }
+
+        async function createNewTreatment() {
+            const idNumber = document.getElementById('patientId').value;
+            const treatmentType = document.getElementById('treatmentType').value;
+            const templateId = document.getElementById('treatmentTemplate').value || null;
+            const treatmentSummary = document.getElementById('treatmentSummary').value;
+            const recommendations = document.getElementById('recommendations').value;
+            
+            if (!treatmentType || !treatmentSummary) {
+                alert('Please fill in Treatment Type and Summary');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/createTreatment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        therapistId: window.currentUserId,
+                        idNumber,
+                        treatmentType,
+                        treatmentSummary,
+                        recommendations,
+                        templateId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to create treatment');
+                }
+                
+                alert('New treatment session created successfully!');
+                // Clear form and reload history
+                document.getElementById('treatmentType').value = '';
+                document.getElementById('treatmentTemplate').value = '';
+                document.getElementById('treatmentSummary').value = '';
+                document.getElementById('recommendations').value = '';
+                loadTreatmentHistory(idNumber);
+                
+            } catch (error) {
+                console.error('Error creating treatment:', error);
+                alert('Error creating treatment session');
+            }
+        }
+
+        function scheduleNext() {
+            alert('פונקציונליות קביעת תור הבא תתווסף בהמשך');
         }
 
         async function submitPatientForm(event) {

@@ -87,9 +87,95 @@ async function addPatient(patient) {
   }
 }
 
+async function getTreatmentHistory(therapistId, idNumber) {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request()
+      .input('therapistId', sql.Int, parseInt(therapistId))
+      .input('idNumber', sql.NVarChar, idNumber)
+      .execute('spGetTreatmentHistory');
+    return result.recordset;
+  } catch (err) {
+    if (err.message.includes('Forbidden')) {
+      const error = new Error('Forbidden');
+      error.status = 403;
+      throw error;
+    }
+    throw err;
+  }
+}
+
+async function getTreatmentTypes() {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request().execute('spGetTreatmentTypes');
+    return result.recordset;
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function updateTreatment(therapistId, treatmentId, treatmentType, treatmentSummary, recommendations) {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request()
+      .input('therapistId', sql.Int, parseInt(therapistId))
+      .input('treatmentId', sql.Int, parseInt(treatmentId))
+      .input('treatmentType', sql.NVarChar, treatmentType)
+      .input('treatmentSummary', sql.NVarChar, treatmentSummary)
+      .input('recommendations', sql.NVarChar, recommendations)
+      .execute('spUpdateTreatment');
+    return result.recordset[0];
+  } catch (err) {
+    if (err.message.includes('Forbidden')) {
+      const error = new Error('Forbidden');
+      error.status = 403;
+      throw error;
+    }
+    throw err;
+  }
+}
+
+async function getTreatmentTemplates() {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request().execute('spGetTreatmentTemplates');
+    return result.recordset;
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function createTreatment(therapistId, idNumber, treatmentType, treatmentSummary, recommendations, templateId) {
+  try {
+    let pool = await sql.connect(config);
+    let result = await pool.request()
+      .input('therapistId', sql.Int, parseInt(therapistId))
+      .input('idNumber', sql.NVarChar, idNumber)
+      .input('treatmentType', sql.NVarChar, treatmentType)
+      .input('treatmentSummary', sql.NVarChar, treatmentSummary)
+      .input('recommendations', sql.NVarChar, recommendations)
+      .input('templateId', sql.Int, templateId || 2)
+      .execute('spCreateTreatment');
+    return result.recordset[0];
+  } catch (err) {
+    if (err.message.includes('Forbidden')) {
+      const error = new Error('Forbidden');
+      error.status = 403;
+      throw error;
+    }
+    throw err;
+  }
+}
+
 module.exports = {
   loginUser,
   searchPatient,
   getHealthFunds,
-  addPatient
+  addPatient,
+  getTreatmentHistory,
+  getTreatmentTypes,
+  getTreatmentTemplates,
+  updateTreatment,
+  createTreatment
 };

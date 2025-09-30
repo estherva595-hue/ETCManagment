@@ -64,3 +64,63 @@ app.post('/api/patients', async (req, res) => {
     res.status(500).json({ error: 'Failed to register patient' });
   }
 });
+
+app.post('/api/treatmentHistory', async (req, res) => {
+  const { therapistId, idNumber } = req.body;
+  try {
+    const result = await myRepository.getTreatmentHistory(therapistId, idNumber);
+    res.json(result);
+  } catch (err) {
+    if (err.status === 403) {
+      res.status(403).json({ msg: 'Forbidden' });
+    } else {
+      res.status(500).json({ msg: 'Error getting treatment history', error: err.message });
+    }
+  }
+});
+
+app.get('/api/treatmentTypes', async (req, res) => {
+  try {
+    const result = await myRepository.getTreatmentTypes();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ msg: 'Error getting treatment types', error: err.message });
+  }
+});
+
+app.get('/api/treatmentTemplates', async (req, res) => {
+  try {
+    const result = await myRepository.getTreatmentTemplates();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ msg: 'Error getting treatment templates', error: err.message });
+  }
+});
+
+app.post('/api/createTreatment', async (req, res) => {
+  const { therapistId, idNumber, treatmentType, treatmentSummary, recommendations, templateId } = req.body;
+  try {
+    const result = await myRepository.createTreatment(therapistId, idNumber, treatmentType, treatmentSummary, recommendations, templateId);
+    res.json(result);
+  } catch (err) {
+    if (err.status === 403) {
+      res.status(403).json({ msg: 'Forbidden' });
+    } else {
+      res.status(500).json({ msg: 'Error creating treatment', error: err.message });
+    }
+  }
+});
+
+app.post('/api/updateTreatment', async (req, res) => {
+  const { therapistId, treatmentId, treatmentType, treatmentSummary, recommendations } = req.body;
+  try {
+    const result = await myRepository.updateTreatment(therapistId, treatmentId, treatmentType, treatmentSummary, recommendations);
+    res.json(result);
+  } catch (err) {
+    if (err.status === 403) {
+      res.status(403).json({ msg: 'Forbidden' });
+    } else {
+      res.status(500).json({ msg: 'Error updating treatment', error: err.message });
+    }
+  }
+});

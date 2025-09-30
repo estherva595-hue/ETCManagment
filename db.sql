@@ -36,9 +36,12 @@ BEGIN
         WHERE TherapistID = @therapistId AND PatientID = @patientId
     )
     BEGIN
-        SELECT *
-        FROM dbo.Patients
-        WHERE PatientID = @patientId
+        SELECT 
+            p.*,
+            hf.FundName
+        FROM dbo.Patients p
+        LEFT JOIN dbo.HealthFunds hf ON p.FundID = hf.FundID
+        WHERE p.PatientID = @patientId
     END
     ELSE
     BEGIN
