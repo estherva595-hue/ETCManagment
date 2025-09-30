@@ -153,12 +153,13 @@
 
 
         function sendPatientSearch() {
-            const patientId = document.getElementById('patientId').value;
+            const idNumber = document.getElementById('patientId').value;
             const therapistId = window.currentUserId;
+            console.log('Sending search request - therapistId:', therapistId, 'idNumber:', idNumber);
             fetch('/searchPatient', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ therapistId, patientId })
+                body: JSON.stringify({ therapistId, idNumber })
             })
                 .then(response => {
                     if (response.status === 403) {
@@ -237,6 +238,10 @@
                 options = [
                     'Terapist Module'
                 ];
+            } else if (roleId == 4) {
+                options = [
+                    'Terapist Module'
+                ];
             }
 
             options.forEach(opt => {
@@ -250,7 +255,7 @@
         function showContent(option) {
             const main = document.getElementById('main-content');
             main.innerHTML = `<h2>${option}</h2><p>Content for "${option}" will appear here.</p>`;
-            if (option === "Terapist Module" && window.currentRoleId == 3) {
+            if (option === "Terapist Module" && (window.currentRoleId == 3 || window.currentRoleId == 4)) {
                 main.innerHTML = `
         <h2>Terapist Module</h2>
         <div>

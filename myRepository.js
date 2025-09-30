@@ -31,12 +31,12 @@ async function loginUser(username, password) {
 }
 
 
-async function searchPatient(therapistId, patientId) {
+async function searchPatient(therapistId, idNumber) {
   try {
     let pool = await sql.connect(config);
     let result = await pool.request()
       .input('therapistId', sql.Int, parseInt(therapistId))
-      .input('patientId', sql.Int, parseInt(patientId))
+      .input('idNumber', sql.NVarChar, idNumber)
       .execute('spSearchPatient');
     if (result.recordset.length > 0) {
       return result.recordset[0];

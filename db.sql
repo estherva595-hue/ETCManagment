@@ -15,14 +15,24 @@ GO
 
 CREATE OR ALTER PROCEDURE spSearchPatient
     @therapistId INT,
-    @patientId INT
+    @idNumber NVARCHAR(20)
 AS
 BEGIN
     SET NOCOUNT ON;
+    
+    -- First get PatientID from IDNumber
+    DECLARE @patientId INT;
+    SELECT @patientId = PatientID FROM Patients WHERE IDNumber = @idNumber;
+    
+    IF @patientId IS NULL
+    BEGIN
+        RAISERROR('Patient not found', 16, 1);
+        RETURN;
+    END
 
     IF EXISTS (
         SELECT 1
-        FROM dbo.Appointments
+        FROM dbo.TreatmentRecords
         WHERE TherapistID = @therapistId AND PatientID = @patientId
     )
     BEGIN

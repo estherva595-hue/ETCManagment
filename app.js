@@ -23,14 +23,16 @@ app.post('/loginUser', async (req, res) => {
 });
 
 app.post('/searchPatient', async (req, res) => {
-  const { therapistId, patientId } = req.body;
+  const { therapistId, idNumber } = req.body;
+  console.log('Server received search request:', { therapistId, idNumber });
   try {
-    const result = await myRepository.searchPatient(therapistId, patientId);
+    const result = await myRepository.searchPatient(therapistId, idNumber);
     if (!result) {
       return res.status(404).json({ msg: 'Patient not found' });
     }
     res.json(result);
   } catch (err) {
+    console.log('Search error:', err.message);
     if (err.status === 403) {
       res.status(403).json({ msg: 'Forbidden' });
     } else {
