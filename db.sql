@@ -55,8 +55,7 @@ BEGIN
         RETURN;
     END
 
-    -- Trim whitespace and validate ID Number format (9 digits)
-    SET @IDNumber = LTRIM(RTRIM(@IDNumber));
+    -- Validate ID Number format (9 digits)
     IF LEN(@IDNumber) <> 9 OR @IDNumber LIKE '%[^0-9]%'
     BEGIN
         RAISERROR('ID Number must be exactly 9 digits', 16, 1);
@@ -85,4 +84,7 @@ BEGIN
     SELECT SCOPE_IDENTITY() AS PatientID;
 END
 GO
+
+
+--SELECT * FROM Patients
 
